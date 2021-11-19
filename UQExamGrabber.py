@@ -13,6 +13,7 @@ USERNAME = input("Enter UQ username: ")
 PASSWORD = input("Enter UQ password: ")
 COURSES = input("Courses seperated by ',': ")
 BASE_PATH = input("Enter base download path (if empty defaults to downloads): ")
+
 if BASE_PATH == "":
     BASE_PATH = os.path.expanduser("~") + "\\Downloads\\"
 
@@ -22,9 +23,7 @@ BASE_URL = "https://www.library.uq.edu.au/exams/papers.php?stub="
 
 for course in COURSES.split(","):
     course = course.strip()
-
     print(f"{course}: Fetching exams!")
-
     download_path = f"{BASE_PATH + course}"
 
     options = webdriver.ChromeOptions()
@@ -37,6 +36,7 @@ for course in COURSES.split(","):
         "download.directory_upgrade": True,
         "plugins.always_open_pdf_externally": True
     })
+
     with webdriver.Chrome(options=options) as driver:
         driver.get("https://www.library.uq.edu.au/exams/papers.php?stub=" + course)
 
