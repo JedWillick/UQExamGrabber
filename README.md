@@ -10,6 +10,6 @@ courses.
 4. Enter preferred download path (if blank defaults to downloads folder).
 
 ### Dependencies
-Selenium - `pip install selenium` 
+Selenium: `pip install selenium` 
 <br>
-Chrome and the ChromeDriver `https://chromedriver.chromium.org/downloads`
+Chrome and ChromeDriver: https://chromedriver.chromium.org/downloads
