@@ -1,6 +1,4 @@
 import os
-import shutil
-from time import sleep
 
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
@@ -15,16 +13,14 @@ COURSES = input("Courses seperated by ',': ")
 BASE_PATH = input("Enter base download path (if empty defaults to downloads): ")
 
 if BASE_PATH == "":
-    BASE_PATH = os.path.expanduser("~") + "\\Downloads\\"
+    BASE_PATH = os.path.join(os.path.expanduser("~"), "Downloads")
 
-REMOVE_EXISTING = True
+OVERWRITE = True
 TIMEOUT_DELAY = 5
-BASE_URL = "https://www.library.uq.edu.au/exams/papers.php?stub="
 
 for course in COURSES.split(","):
     course = course.strip()
-    print(f"{course}: Fetching exams!")
-    download_path = f"{BASE_PATH + course}"
+    download_path = os.path.join(BASE_PATH, course)
 
     options = webdriver.ChromeOptions()
     options.add_argument('--headless')
@@ -38,10 +34,10 @@ for course in COURSES.split(","):
     })
 
     with webdriver.Chrome(options=options) as driver:
-        driver.get("https://www.library.uq.edu.au/exams/papers.php?stub=" + course)
+        driver.get("https://auth.uq.edu.au/")
 
         try:
-            element = WebDriverWait(driver, TIMEOUT_DELAY).until(EC.presence_of_element_located((By.ID, "username")))
+            WebDriverWait(driver, TIMEOUT_DELAY).until(EC.presence_of_element_located((By.ID, "username")))
         except TimeoutException:
             print(f"Timed out on:\n{driver.current_url}")
             exit(1)
@@ -53,23 +49,34 @@ for course in COURSES.split(","):
             print("Incorrect username or password!")
             exit(2)
 
-        try: element = WebDriverWait(driver, TIMEOUT_DELAY).until(
-            EC.presence_of_element_located((By.XPATH, "//div[@class='a']/a")))
+        print(f"{course}: Fetching exams!")
+        driver.get(f"https://www.library.uq.edu.au/exams/papers.php?stub={course}")
+
+        try:
+            WebDriverWait(driver, TIMEOUT_DELAY).until(EC.presence_of_element_located((By.PARTIAL_LINK_TEXT, course)))
         except TimeoutException:
             print(f"Timed out on:\n{driver.current_url}")
             continue
 
-        if os.path.exists(download_path) and REMOVE_EXISTING:
-            shutil.rmtree(download_path)
-
         if not os.path.exists(download_path):
             os.mkdir(download_path)
 
-        links = [exam.get_attribute("href") for exam in driver.find_elements_by_xpath("//div[@class='a']/a")]
+        links = [exam.get_attribute("href") for exam in driver.find_elements_by_partial_link_text(course)]
+
+        print(f"{course}: Downloading exams to {download_path}")
+
         for i, link in enumerate(links):
             print(f"{course}: Downloading {i + 1}/{len(links)} exams!")
+
+            filepath = os.path.join(download_path, link.split('/')[-1])
+
+            if os.path.exists(filepath) and OVERWRITE:
+                os.remove(filepath)
+
             driver.get(link)
-            sleep(1)
+
+            while not os.path.exists(filepath):
+                pass  # Waiting for exam to download
 
 os.system("@ECHO OFF \ntaskkill /f /t /im chromedriver.exe")
 exit(0)
