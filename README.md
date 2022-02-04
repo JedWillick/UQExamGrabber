@@ -1,15 +1,25 @@
-## UQ Exam Grabber
+# UQ Exam Grabber
 
-Using Selenium and chrome driver, automatically log-in to UQ library and download all past exams for the specified
+Using Selenium and chromedriver, automatically log-in to [UQ library](https://www.library.uq.edu.au/exams/) and download all past exams for the specified
 courses.
 
-### How to
-1. Run the `UQExamGrabber.py` script.
-2. Enter UQ login.
-3. Enter courses (seperated by `,`).
-4. Enter preferred base download path (if blank defaults to downloads folder).
+## Setup
 
-### Dependencies
-Selenium: `pip install selenium` 
-<br>
-Chrome and ChromeDriver: https://chromedriver.chromium.org/downloads
+```shell
+git clone https://github.com/jedwillick/UQExamGrabber.git
+cd UQExamGrabber
+pip install . 
+uqeg -h
+```
+
+### Examples
+
+```shell
+uqeg s1234567 password123 csse2310,csse2010,comp3400
+uqeg s1234567 password123 csse2310,csse2010,comp3400 ~/Documents/uq-exams
+```
+
+## Dependencies
+
+- Selenium (downloaded automatically through setup)
+- Chrome and chromedriver <https://chromedriver.chromium.org/downloads>
