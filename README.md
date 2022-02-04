@@ -16,7 +16,7 @@ uqeg -h
 
 ```shell
 uqeg s1234567 password123 csse2310,csse2010,comp3400
-uqeg s1234567 password123 csse2310,csse2010,comp3400 ~/Documents/uq-exams
+uqeg s1234567 password123 math1051 ~/Documents/uq-exams
 ```
 
 ## Dependencies
