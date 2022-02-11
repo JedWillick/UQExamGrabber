@@ -28,7 +28,7 @@ uqtools eg math1051 -o ~/Documents/uq-exams
 
 ## UQ Timetable
 
-Scrap your allocated classes from [Allocate+]("http://my.uq.edu.au/student-timetable) and output them in a prettier and cleaner PDF or excel file.
+Scrap your allocated classes from [Allocate+](http://my.uq.edu.au/student-timetable) and output them in a prettier and cleaner PDF or excel file.
 
 ```shell
 uqtools tt --help
