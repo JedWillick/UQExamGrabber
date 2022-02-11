@@ -1,4 +1,4 @@
-import argparse as ap
+import argparse
 from pathlib import Path
 
 from .env import Env
@@ -6,7 +6,7 @@ from .examgrabber import exam_grabber
 from .timetable import Timetable
 
 
-def setup_timetable(sub: ap._SubParsersAction) -> None:
+def setup_timetable(sub: argparse._SubParsersAction) -> None:
     desc = "Get and convert your UQ timetable into a pretty PDF"
     timetable = sub.add_parser("timetable", aliases=["tt"], description=desc, help=desc)
 
@@ -43,7 +43,7 @@ def setup_timetable(sub: ap._SubParsersAction) -> None:
     )
 
 
-def setup_exam(sub: ap._SubParsersAction) -> None:
+def setup_exam(sub: argparse._SubParsersAction) -> None:
     desc = "Download Past UQ exams"
     exam = sub.add_parser("exam", aliases=["eg"], description=desc, help=desc)
 
@@ -66,10 +66,10 @@ def setup_exam(sub: ap._SubParsersAction) -> None:
     )
 
 
-def setup_argparse() -> ap.Namespace:
-    root = ap.ArgumentParser(
+def setup_argparse() -> argparse.Namespace:
+    root = argparse.ArgumentParser(
         description="Collection of tools to scrap UQ.\nUse 'uqtools <CMD> --help' for more info",
-        formatter_class=ap.RawTextHelpFormatter
+        formatter_class=argparse.RawTextHelpFormatter
     )
     root.add_argument(
         "-t", "--timeout",
@@ -99,12 +99,12 @@ def setup_argparse() -> ap.Namespace:
     return root.parse_args()
 
 
-def main():
+def main() -> int:
     args = setup_argparse()
 
     if args.cmd == "env":
         Env.config_env(args)
-        return
+        return 0
 
     env = Env(args.username, args.password, args.timeout, args.headless)
     if args.cmd in ["exam", "eg"]:
@@ -112,3 +112,4 @@ def main():
     elif args.cmd in ["timetable", "tt"]:
         tt = Timetable(env, args.semester, args.year)
         tt.write(args.out, args.excel, args.time_size, args.open)
+    return 0

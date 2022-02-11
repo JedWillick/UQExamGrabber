@@ -4,6 +4,7 @@ from typing import Union
 from selenium.webdriver import Chrome, ChromeOptions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import WebDriverWait
 
 from .env import Env
 
@@ -17,6 +18,7 @@ class UQDriver(Chrome):
 
         self.implicitly_wait(env.timeout)
         self.login(env.username, env.password)
+        self.wait = WebDriverWait(self, env.timeout)
 
     def login(self, username: str, password: str) -> None:
         self.get("https://auth.uq.edu.au/")

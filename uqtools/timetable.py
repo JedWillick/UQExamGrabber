@@ -5,6 +5,8 @@ from subprocess import Popen
 
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
 
 from .driver import UQDriver
 from .env import Env
@@ -78,6 +80,7 @@ class Timetable:
     def get_timetable(self):
         with UQDriver(self.env) as driver:
             driver.get(f"https://timetable.my.uq.edu.au/{self.year}/student")
+            driver.wait.until(EC.presence_of_element_located((By.XPATH, "//script[contains(text(), 'data=')]")))
             data = driver.execute_script("return data.student.allocated;")
 
         timetable = [
@@ -95,9 +98,9 @@ class Timetable:
 
     def write(self, out=None, excel=False, time_size=60, open=False):
         out = out if out else f"timetable-{datetime.now().year}-{self.semester}{'.xlsx' if excel else '.pdf'}"
-        print(excel)
         self.write_excel(out, time_size) if excel else self.write_pdf(out, time_size)
 
+        print(Path(out).resolve().as_uri())
         if open:
             Popen([Path(f"./{out}")], shell=True)
 

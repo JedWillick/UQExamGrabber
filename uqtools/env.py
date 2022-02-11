@@ -13,7 +13,7 @@ class Env:
 
     def __init__(self, username=None, password=None, timeout=5, headless=True) -> None:
         if not self._PATH.exists():
-            self.new_env()
+            Env._PATH.touch()
 
         dotenv.load_dotenv()
         self.username = os.getenv(self._USERNAME, username)
@@ -39,19 +39,19 @@ class Env:
         )
 
         env.add_argument(
-            "-r", "--reset",
+            "-r", "--remove",
             action="store_true",
-            help="Reset .env file",
+            help="Remove .env file",
         )
 
     @staticmethod
-    def new_env() -> None:
-        Env._PATH.write_text('')
+    def remove_env() -> None:
+        Env._PATH.unlink(missing_ok=True)
 
     @staticmethod
     def config_env(args: argparse.Namespace) -> None:
-        if args.reset:
-            Env.new_env()
+        if args.remove:
+            Env.remove_env()
             return
 
         Env._PATH.touch()
