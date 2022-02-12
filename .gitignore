@@ -160,4 +160,5 @@ cython_debug/
 .vscode
 .idea
 *.pdf
-*.xlsx
+*.json
+!inject-template.json

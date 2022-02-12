@@ -11,7 +11,7 @@ uqtools --help
 
 ## Dependencies
 
-- Chrome and chromedriver <https://chromedriver.chromium.org/downloads>
+- Chrome and [chromedriver](https://chromedriver.chromium.org/downloads)
 - selenium, python-dotenv, reportlab
 
 ## UQ Exam Grabber
@@ -28,12 +28,32 @@ uqtools eg math1051 -o ~/Documents/uq-exams
 
 ## UQ Timetable
 
-Scrap your allocated classes from [Allocate+](http://my.uq.edu.au/student-timetable) and output them in a prettier and cleaner PDF or excel file.
+Scrap your allocated classes from [Allocate+](http://my.uq.edu.au/student-timetable) and output them in a prettier and cleaner PDF file.
 
 ```shell
 uqtools tt --help
 
 uqtools tt
 uqtools tt -o tt.pdf
-uqtools tt --time-size 30 --open
+uqtools tt --time-size 30 -i inject.json
+```
+
+### Injecting data
+
+You can inject your own data in addition to that gathered from [Allocate+](http://my.uq.edu.au/student-timetable) by providing a json file with the `-i` flag
+
+#### Template
+
+```json
+{
+  "unique_key": {
+    "semester": "S1",
+    "subject_code": "Title",
+    "activity_group_code": "Activity",
+    "day_of_week": "Sat",
+    "start_time": "14:30",
+    "location": "Home",
+    "duration": 90
+  }
+}
 ```

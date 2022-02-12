@@ -1,9 +1,10 @@
 import argparse
+import json
 from pathlib import Path
 
 from .env import Env
 from .examgrabber import exam_grabber
-from .timetable import Timetable
+from .timetable import timetable
 
 
 def setup_timetable(sub: argparse._SubParsersAction) -> None:
@@ -12,6 +13,7 @@ def setup_timetable(sub: argparse._SubParsersAction) -> None:
 
     timetable.add_argument(
         "-o", "--out",
+        type=Path,
         help="Output file (default: generated)",
     )
     timetable.add_argument(
@@ -20,11 +22,6 @@ def setup_timetable(sub: argparse._SubParsersAction) -> None:
         default=60,
         choices=[30, 60],
         help="The time size (default: %(default)s)",
-    )
-    timetable.add_argument(
-        "-e", "--excel",
-        action="store_true",
-        help="Output Excel file instead of PDF",
     )
     timetable.add_argument(
         "-s", "--semester",
@@ -37,9 +34,16 @@ def setup_timetable(sub: argparse._SubParsersAction) -> None:
         help="Manually set the year (default: current)",
     )
     timetable.add_argument(
-        "-v", "--open",
-        action="store_true",
-        help="Open the file after writing it",
+        "-i", "--inject",
+        type=lambda x: json.loads(Path(x).read_text()),
+        metavar="JSON",
+        help="Inject data from a json file",
+    )
+    timetable.add_argument(
+        "-nf", "--no-fetch",
+        action="store_false",
+        dest="fetch",
+        help="Don't fetch data from UQ",
     )
 
 
@@ -92,7 +96,7 @@ def setup_argparse() -> argparse.Namespace:
         help="UQ password if not storing in .env file"
     )
 
-    sub = root.add_subparsers(dest="cmd", metavar="CMD")
+    sub = root.add_subparsers(dest="cmd", metavar="CMD", required=True)
     setup_exam(sub)
     setup_timetable(sub)
     Env.setup_args(sub)
@@ -110,6 +114,13 @@ def main() -> int:
     if args.cmd in ["exam", "eg"]:
         exam_grabber(env, args.courses, args.out, args.overwrite)
     elif args.cmd in ["timetable", "tt"]:
-        tt = Timetable(env, args.semester, args.year)
-        tt.write(args.out, args.excel, args.time_size, args.open)
+        timetable(
+            env,
+            out=args.out,
+            time_size=args.time_size,
+            semester=args.semester,
+            year=args.year,
+            inject=args.inject,
+            fetch=args.fetch
+        )
     return 0
