@@ -17,6 +17,12 @@ def setup_timetable(sub: argparse._SubParsersAction) -> None:
         help="Output file (default: generated)",
     )
     timetable.add_argument(
+        "-r", "--orientation",
+        default="landscape",
+        choices=["portrait", "landscape"],
+        help="Set the orientation of the PDF (default: %(default)s)",
+    )
+    timetable.add_argument(
         "-p", "--time-size",
         type=int,
         default=60,
@@ -121,6 +127,7 @@ def main() -> int:
             semester=args.semester,
             year=args.year,
             inject=args.inject,
-            fetch=args.fetch
+            fetch=args.fetch,
+            orientation=args.orientation,
         )
     return 0

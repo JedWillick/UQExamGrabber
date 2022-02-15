@@ -35,7 +35,7 @@ uqtools tt --help
 
 uqtools tt
 uqtools tt -o tt.pdf
-uqtools tt --time-size 30 -i inject.json
+uqtools tt -r portrait --time-size 30 
 ```
 
 ### Injecting data
