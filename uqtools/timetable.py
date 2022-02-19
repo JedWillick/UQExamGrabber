@@ -74,7 +74,7 @@ def timetable(env: Env,
               inject: dict = None,
               orientation: str = "landscape") -> Path:
 
-    PALLET = ["#f8cbad", "#c6e0b4", "#bdd7ee", "#ffe699", "#e2a2f6", "#d9d9d9"]
+    PALLETE = ["#f8cbad", "#c6e0b4", "#bdd7ee", "#ffe699", "#d9d9d9", "#e2a2f6"]
     DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
     DEF_MIN = 8
     DEF_MAX = 18
@@ -110,7 +110,7 @@ def timetable(env: Env,
     details = [
         [
             re.findall(r"[^_]+", i["subject_code"])[0],
-            i["activity_group_code"],
+            i["activityType"],
             day_to_int(i["day_of_week"]),
             starttime_to_index(i["start_time"], lower),
             "ONLINE" if i["location"] == "-" else re.findall(r"\S*", i["location"])[0],
@@ -198,7 +198,7 @@ def timetable(env: Env,
             text += "\n" + group
         tt[hour][day] = text
 
-        for course, fill in zip(courses, PALLET):
+        for course, fill in zip(courses, PALLETE):
             if course == code:
                 table_style.add('BACKGROUND', (day, hour), (day, hour), fill)
                 break
