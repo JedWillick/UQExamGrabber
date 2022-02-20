@@ -49,7 +49,7 @@ You can inject your own data in addition to that gathered from [Allocate+](http:
   "unique_key": {
     "semester": "S1",
     "subject_code": "Title",
-    "activity_group_code": "Activity",
+    "activityType": "Activity",
     "day_of_week": "Sat",
     "start_time": "14:30",
     "location": "Home",
