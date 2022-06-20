@@ -12,7 +12,17 @@ uqtools --help
 ## Dependencies
 
 - Chrome and [chromedriver](https://chromedriver.chromium.org/downloads)
-- selenium, python-dotenv, reportlab
+- selenium, python-dotenv, reportlab, requests, lxml
+
+## UQ Course Grade Calculator
+
+Calculate what grade you will get and how much more you need to get with the given marks.
+
+```shell
+uqtools gr --help
+
+uqtools gr csse2310,15,13.5,14,12.25  deco2500
+```
 
 ## UQ Exam Grabber
 
@@ -22,7 +32,7 @@ courses.
 ```shell
 uqtools eg --help
 
-uqtools eg csse2310,csse2010,comp3400
+uqtools eg csse2310 csse2010 comp3400
 uqtools eg math1051 -o ~/Documents/uq-exams
 ```
 

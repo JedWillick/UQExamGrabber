@@ -4,6 +4,7 @@ from pathlib import Path
 
 from .env import Env
 from .examgrabber import exam_grabber
+from .grade import grade
 from .timetable import timetable
 
 
@@ -12,41 +13,48 @@ def setup_timetable(sub: argparse._SubParsersAction) -> None:
     timetable = sub.add_parser("timetable", aliases=["tt"], description=desc, help=desc)
 
     timetable.add_argument(
-        "-o", "--out",
+        "-o",
+        "--out",
         type=Path,
         help="Output file (default: generated)",
     )
     timetable.add_argument(
-        "-r", "--orientation",
+        "-r",
+        "--orientation",
         default="landscape",
         choices=["portrait", "landscape"],
         help="Set the orientation of the PDF (default: %(default)s)",
     )
     timetable.add_argument(
-        "-p", "--time-size",
+        "-p",
+        "--time-size",
         type=int,
         default=60,
         choices=[30, 60],
         help="The time size (default: %(default)s)",
     )
     timetable.add_argument(
-        "-s", "--semester",
+        "-s",
+        "--semester",
         choices=["S1", "S2", "S3"],
         help="Manually set the semester (default: current)",
     )
     timetable.add_argument(
-        "-y", "--year",
+        "-y",
+        "--year",
         choices=["even", "odd"],
         help="Manually set the year (default: current)",
     )
     timetable.add_argument(
-        "-i", "--inject",
+        "-i",
+        "--inject",
         type=lambda x: json.loads(Path(x).read_text()),
         metavar="JSON",
         help="Inject data from a json file",
     )
     timetable.add_argument(
-        "-nf", "--no-fetch",
+        "-nf",
+        "--no-fetch",
         action="store_false",
         dest="fetch",
         help="Don't fetch data from UQ",
@@ -59,58 +67,118 @@ def setup_exam(sub: argparse._SubParsersAction) -> None:
 
     exam.add_argument(
         "courses",
-        type=lambda x: [course for course in x.split(",")],
-        help="Comma separated list of courses",
+        nargs="+",
+        help="Course codes to download",
     )
     exam.add_argument(
-        "-o", "--out",
+        "-o",
+        "--out",
         type=Path,
         default=Path.cwd(),
-        help=f"Base out directory.",
+        help="Base out directory.",
     )
     exam.add_argument(
-        "-n", "--no-overwrite",
+        "-n",
+        "--no-overwrite",
         action="store_false",
         dest="overwrite",
         help="Don't overwrite existing files",
     )
 
 
-def setup_argparse() -> argparse.Namespace:
+def parse_course_grades(arg: str) -> list:
+    tokens = arg.split(",")
+    if len(tokens) == 0:
+        raise argparse.ArgumentTypeError("No course code given")
+
+    try:
+        course = {
+            "code": tokens[0],
+            "marks": list(map(float, tokens[1:])),
+        }
+    except ValueError:
+        raise argparse.ArgumentTypeError("Marks must be floats")
+
+    return course
+
+
+def setup_grade(sub: argparse._SubParsersAction) -> None:
+    desc = (
+        "Calculate what grade you will get and "
+        "how much more you need to get with the given marks"
+    )
+    grade = sub.add_parser("grade", aliases=["gr"], description=desc, help=desc)
+
+    grade.add_argument(
+        "courses",
+        help="Course code followed by marks in order (e.g. csse2310,15,14,13)."
+        "If no marks are given will prompt for them",
+        nargs="+",
+        type=parse_course_grades,
+    )
+    grade.add_argument(
+        "-o",
+        "--out",
+        type=Path,
+        help="Output file",
+    )
+    grade.add_argument(
+        "-s",
+        "--sem",
+        type=int,
+        help="Semester to calculate grade. (Default: current)."
+        "To select summer semester input 3",
+    )
+    grade.add_argument(
+        "-y",
+        "--year",
+        type=int,
+        help="Year to calculate grade for (Default: current)",
+    )
+
+
+def setup_argparse() -> argparse.ArgumentParser:
     root = argparse.ArgumentParser(
-        description="Collection of tools to scrap UQ.\nUse 'uqtools <CMD> --help' for more info",
-        formatter_class=argparse.RawTextHelpFormatter
+        description="Collection of tools to scrap UQ.\n"
+        "Use 'uqtools <CMD> --help' for more info",
+        formatter_class=argparse.RawTextHelpFormatter,
     )
     root.add_argument(
-        "-t", "--timeout",
+        "-t",
+        "--timeout",
         type=int,
         default=5,
         help="Set the timeout for requests (default: 5)",
     )
     root.add_argument(
-        "-b", "--no-headless",
+        "-b",
+        "--no-headless",
         action="store_false",
         dest="headless",
         help="Don't use headless mode",
     )
     root.add_argument(
-        "-u", "--username",
-        help="UQ username if not storing in .env file"
+        "-u", "--username", help="UQ username if not storing in .env file"
     )
     root.add_argument(
-        "-p", "--password",
-        help="UQ password if not storing in .env file"
+        "-p", "--password", help="UQ password if not storing in .env file"
     )
 
-    sub = root.add_subparsers(dest="cmd", metavar="CMD", required=True)
+    sub = root.add_subparsers(dest="cmd", metavar="CMD", required=False)
     setup_exam(sub)
     setup_timetable(sub)
     Env.setup_args(sub)
-    return root.parse_args()
+    setup_grade(sub)
+
+    return root
 
 
 def main() -> int:
-    args = setup_argparse()
+    parser = setup_argparse()
+    args = parser.parse_args()
+    if args.cmd is None:
+        parser.print_help()
+        return 1
 
     if args.cmd == "env":
         Env.config_env(args)
@@ -129,5 +197,12 @@ def main() -> int:
             inject=args.inject,
             fetch=args.fetch,
             orientation=args.orientation,
+        )
+    elif args.cmd in ["grade", "gr"]:
+        grade(
+            args.courses,
+            out=args.out,
+            sem=args.sem,
+            year=args.year,
         )
     return 0

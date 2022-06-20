@@ -65,32 +65,52 @@ def code_to_year(code: str) -> int:
     return year
 
 
-def timetable(env: Env,
-              out: Union[Path, str] = None,
-              semester: str = None,
-              year: str = None,
-              time_size: int = 60,
-              fetch: bool = True,
-              inject: dict = None,
-              orientation: str = "landscape") -> Path:
+def timetable(
+    env: Env,
+    out: Union[Path, str] = None,
+    semester: str = None,
+    year: str = None,
+    time_size: int = 60,
+    fetch: bool = True,
+    inject: dict = None,
+    orientation: str = "landscape",
+) -> Path:
 
     PALLETE = ["#f8cbad", "#c6e0b4", "#bdd7ee", "#ffe699", "#d9d9d9", "#e2a2f6"]
-    DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    DAYS = [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday",
+    ]
     DEF_MIN = 8
     DEF_MAX = 18
 
     semester = semester if semester else current_semester()
     year = year if year else current_year()
-    out = Path(out if out else f"timetable-{code_to_year(year)}-{semester}.pdf").expanduser().resolve()
+    out = (
+        Path(out if out else f"timetable-{code_to_year(year)}-{semester}.pdf")
+        .expanduser()
+        .resolve()
+    )
 
     raw = {}
     if fetch:
         with UQDriver(env) as driver:
             driver.get(f"https://timetable.my.uq.edu.au/{year}/student")
-            driver.wait.until(EC.presence_of_element_located((By.XPATH, "//script[contains(text(), 'data=')]")))
+            driver.wait.until(
+                EC.presence_of_element_located(
+                    (By.XPATH, "//script[contains(text(), 'data=')]")
+                )
+            )
             raw = driver.execute_script("return data.student.allocated;")
 
     if inject:
+        [raw.pop(i, None) for i in inject.get("remove", [])]
+        inject.pop("remove", None)
         raw |= inject
 
     details = []
@@ -103,7 +123,9 @@ def timetable(env: Env,
 
     lower = min(i["start_time"] for i in details).hour
     lower = lower if lower < DEF_MIN else DEF_MIN
-    upper = max(i["start_time"] + datetime.timedelta(minutes=i["duration"]) for i in details)
+    upper = max(
+        i["start_time"] + datetime.timedelta(minutes=i["duration"]) for i in details
+    )
     upper = upper.hour if upper.hour > DEF_MAX else DEF_MAX
     time_span = upper - lower + 1
 
@@ -120,6 +142,7 @@ def timetable(env: Env,
     ]
 
     courses = list(set(details[i][0] for i in range(len(details))))
+    courses.sort()
 
     if orientation == "portrait":
         days = DAYS[:-2]
@@ -140,52 +163,60 @@ def timetable(env: Env,
     )
 
     border_width = 2
-    border_color = 'rgb(0, 0, 0)'
+    border_color = "rgb(0, 0, 0)"
 
     grid_width = 1
-    grid_color = 'rgb(0, 0, 0)'
+    grid_color = "rgb(0, 0, 0)"
 
-    table_style = TableStyle([
-        # Main Section
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('VALIGN', (1, 0), (-1, -1), 'MIDDLE'),
-        ('FONT', (1, 1), (-1, -1), 'Helvetica', 12),
-
-        # Days
-        ('INNERGRID', (1, 0), (-1, 1), grid_width, grid_color),
-        ('FONT', (1, 0), (-1, 0), 'Helvetica-Bold', 14),
-
-        # Hours
-        ('VALIGN', (0, 1), (0, -1), 'TOP'),
-        ('FONT', (0, 1), (0, -1), 'Helvetica-Bold', 14),
-    ])
+    table_style = TableStyle(
+        [
+            # Main Section
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("VALIGN", (1, 0), (-1, -1), "MIDDLE"),
+            ("FONT", (1, 1), (-1, -1), "Helvetica", 12),
+            # Days
+            ("INNERGRID", (1, 0), (-1, 1), grid_width, grid_color),
+            ("FONT", (1, 0), (-1, 0), "Helvetica-Bold", 14),
+            # Hours
+            ("VALIGN", (0, 1), (0, -1), "TOP"),
+            ("FONT", (0, 1), (0, -1), "Helvetica-Bold", 14),
+        ]
+    )
 
     for i in range(len(days)):
-        table_style.add('SPAN', (i + 1, 0), (i + 1, 1))
+        table_style.add("SPAN", (i + 1, 0), (i + 1, 1))
 
     for row in range(0, time_span * 4, 2):
         for col in range(8):
             midcol = col + 1 if time_size == 60 else col
-            table_style.add('LINEABOVE', (midcol, row + 2), (-midcol, row + 2), 1,  'rgb(191, 191, 191)')
+            table_style.add(
+                "LINEABOVE",
+                (midcol, row + 2),
+                (-midcol, row + 2),
+                1,
+                "rgb(191, 191, 191)",
+            )
 
     for row in range(1, time_span * 4, 4):
         for col in range(8):
-            table_style.add('BOX', (col, row + 1), (col, -row), grid_width, grid_color)
+            table_style.add("BOX", (col, row + 1), (col, -row), grid_width, grid_color)
 
     # Borders
-    table_style.add('BOX', (1, 2), (-1, -1), border_width, border_color)
-    table_style.add('BOX', (1, 0), (-1, 1), border_width, border_color)
-    table_style.add('BOX', (0, 2), (0, -1), border_width, border_color)
+    table_style.add("BOX", (1, 2), (-1, -1), border_width, border_color)
+    table_style.add("BOX", (1, 0), (-1, 1), border_width, border_color)
+    table_style.add("BOX", (0, 2), (0, -1), border_width, border_color)
 
-    filler = [''] * (len(days) + 1)
+    filler = [""] * (len(days) + 1)
 
-    tt = [[''] + days] + [filler]
+    tt = [[""] + days] + [filler]
 
     for hour in range(lower, upper + 1):
         tt.append([datetime.time(hour=hour).strftime("%H:%M")] + filler[:-1])
         tt.append([*filler])
         if time_size == 30:
-            tt.append([datetime.time(hour=hour, minute=30).strftime("%H:%M")] + filler[:-1])
+            tt.append(
+                [datetime.time(hour=hour, minute=30).strftime("%H:%M")] + filler[:-1]
+            )
         else:
             tt.append([*filler])
         tt.append([*filler])
@@ -200,17 +231,19 @@ def timetable(env: Env,
 
         for course, fill in zip(courses, PALLETE):
             if course == code:
-                table_style.add('BACKGROUND', (day, hour), (day, hour), fill)
+                table_style.add("BACKGROUND", (day, hour), (day, hour), fill)
                 break
 
-        table_style.add('SPAN', (day, hour), (day, hour + duration))
-        table_style.add('BOX', (day, hour), (day, hour + duration), grid_width, grid_color)
+        table_style.add("SPAN", (day, hour), (day, hour + duration))
+        table_style.add(
+            "BOX", (day, hour), (day, hour + duration), grid_width, grid_color
+        )
 
     table = Table(
         tt,
         colWidths=round(a4[1] / len(tt[0])) - 4,
         rowHeights=round(a4[0] / len(tt)) - 1,
-        style=table_style
+        style=table_style,
     )
 
     doc.build([table])
