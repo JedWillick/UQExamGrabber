@@ -46,7 +46,9 @@ def exam_grabber(
 
             driver.get(f"https://www.library.uq.edu.au/exams/papers.php?stub={course}")
 
-            if not driver.find_elements(By.XPATH, "//div[@id='examResultsDescription']"):
+            if not driver.find_elements(
+                By.XPATH, "//div[@id='examResultsDescription']"
+            ):
                 print(f"{course} has no past exams")
                 continue
 
