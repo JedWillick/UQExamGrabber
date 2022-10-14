@@ -1,10 +1,13 @@
 import datetime
+import json
 import re
+import sys
 from pathlib import Path
 from typing import Union
 
 from reportlab.lib.pagesizes import A4, landscape, portrait
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 
@@ -74,6 +77,7 @@ def timetable(
     fetch: bool = True,
     inject: dict = None,
     orientation: str = "landscape",
+    store: bool = False,
 ) -> Path:
 
     PALLETE = ["#f8cbad", "#c6e0b4", "#bdd7ee", "#ffe699", "#d9d9d9", "#e2a2f6"]
@@ -91,27 +95,40 @@ def timetable(
 
     semester = semester if semester else current_semester()
     year = year if year else current_year()
-    out = (
-        Path(out if out else f"timetable-{code_to_year(year)}-{semester}.pdf")
-        .expanduser()
-        .resolve()
-    )
+    out = out if out else f"timetable-{code_to_year(year)}-{semester}-{orientation}.pdf"
+    out = Path(out).expanduser().resolve()
 
     raw = {}
     if fetch:
         with UQDriver(env) as driver:
             driver.get(f"https://timetable.my.uq.edu.au/{year}/student")
-            driver.wait.until(
-                EC.presence_of_element_located(
-                    (By.XPATH, "//script[contains(text(), 'data=')]")
+            try:
+                driver.wait.until(
+                    EC.presence_of_element_located(
+                        (By.XPATH, "//script[contains(text(), 'data=')]")
+                    )
                 )
-            )
+            except TimeoutException:
+                print("Unable to find timetable data!", file=sys.stderr)
+                sys.exit(1)
+
             raw = driver.execute_script("return data.student.allocated;")
 
     if inject:
+        REQUIRED = ("day_of_week", "start_time", "duration")
         [raw.pop(i, None) for i in inject.get("remove", [])]
         inject.pop("remove", None)
-        raw |= inject
+        for k, v in inject.items():
+            v.setdefault("subject_code", k)
+            v.setdefault("semester", semester)
+            v.setdefault("activityType", "")
+            v.setdefault("location", "")
+            for r in REQUIRED:
+                if r not in v:
+                    print(f'{k}: Missing required field "{r}"', file=sys.stderr)
+                    break
+            else:  # no break
+                raw[k] = v
 
     details = []
     for i in raw.values():
@@ -120,6 +137,10 @@ def timetable(
         i["start_time"] = datetime.datetime.strptime(i["start_time"], "%H:%M")
         i["duration"] = int(i["duration"])
         details.append(i)
+
+    if store:
+        with open("timetable.json", "w") as f:
+            f.write(json.dumps(raw, indent=4, default=str))
 
     lower = min(i["start_time"] for i in details).hour
     lower = lower if lower < DEF_MIN else DEF_MIN

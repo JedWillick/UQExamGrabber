@@ -1,5 +1,7 @@
+import shutil
 from pathlib import Path
-from typing import Union
+from tempfile import TemporaryDirectory
+from typing import List, Union
 
 from selenium.webdriver.common.by import By
 
@@ -12,52 +14,70 @@ def check_path(path: Union[str, Path]) -> Path:
     if not p.exists():
         p.mkdir(parents=True)
     elif not p.is_dir():
-        raise FileExistsError(f"{p} is not a directory")
+        raise NotADirectoryError(f"{p} is not a directory")
     return p
 
 
-def exam_grabber(env: Env, courses: list[str], out, overwrite=True) -> int:
-    out = check_path(out)
+def exam_grabber(
+    env: Env,
+    courses: List[str],
+    baseOutDir: Union[str, Path] = ".",
+    force=False,
+    max_exams=0,
+) -> int:
+    baseOutDir = check_path(baseOutDir)
 
-    for course in courses:
-        download_path = out / f"{course}-exams"
+    with (
+        TemporaryDirectory() as tmpDir,
+        UQDriver(
+            env,
+            extra_exp={
+                "prefs": {
+                    "download.default_directory": tmpDir,
+                    "download.prompt_for_download": False,
+                    "download.directory_upgrade": True,
+                    "plugins.always_open_pdf_externally": True,
+                }
+            },
+        ) as driver,
+    ):
+        for course in courses:
+            outDir = baseOutDir / f"{course}-exams"
 
-        exp = {
-            "prefs": {
-                "download.default_directory": str(download_path),
-                "download.prompt_for_download": False,
-                "download.directory_upgrade": True,
-                "plugins.always_open_pdf_externally": True,
-            }
-        }
-
-        with UQDriver(env, extra_exp=exp) as driver:
             driver.get(f"https://www.library.uq.edu.au/exams/papers.php?stub={course}")
 
-            if not driver.find_elements_by_xpath("//div[@id='examResultsDescription']"):
+            if not driver.find_elements(By.XPATH, "//div[@id='examResultsDescription']"):
                 print(f"{course} has no past exams")
                 continue
 
-            check_path(download_path)
+            check_path(outDir)
 
             links = [
                 exam.get_attribute("href")
                 for exam in driver.find_elements(By.PARTIAL_LINK_TEXT, course.upper())
             ]
+            if max_exams:
+                links = links[:max_exams]
 
-            print(f"{course} @ {download_path.as_uri()}")
+            uri = outDir.as_uri()
+            len_ = len(links)
+            for i, link in enumerate(links, start=1):
+                print(f"{course} {i}/{len_} @ {uri}", end="\r")
 
-            for i, link in enumerate(links):
-                print(f"Downloading {i + 1}/{len(links)} exams!", end="\r")
-
-                filepath = download_path / link.split("/")[-1]
-                filepath.unlink() if filepath.exists() and overwrite else None
+                file: Path = outDir / link.split("/")[-1]
+                if file.exists():
+                    if not force:
+                        continue
+                    file.unlink()
 
                 driver.get(link)
 
-                while not filepath.exists():
+                tmpFile = Path(tmpDir) / file.name
+
+                while not tmpFile.exists():
                     pass  # Waiting for exam to download
 
+                shutil.move(tmpFile, file)
             print()
 
     return 0

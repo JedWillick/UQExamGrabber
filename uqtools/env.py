@@ -26,12 +26,7 @@ class Env:
 
         self.username = os.getenv(self._USERNAME, username)
         self.password = os.getenv(self._PASSWORD, password)
-        if not self.username or not self.password:
-            print(
-                "Either provide the -u and -p flags. "
-                "Or see 'uqtools env --help' to set the environment variables"
-            )
-            sys.exit(1)
+
         self.timeout = timeout
         self.headless = headless
 
@@ -76,19 +71,18 @@ class Env:
         Env._PATH.unlink(missing_ok=True)
 
     @staticmethod
-    def config_env(args: argparse.Namespace) -> None:
+    def config_env(args: argparse.Namespace):
         if args.remove:
             Env.remove_env()
             return
+
+        Env._PATH.touch(exist_ok=True)
         if args.file_path:
-            print(Env._PATH)
+            print(Env._PATH.as_uri())
             return
-        Env._PATH.touch()
         if len(sys.argv) == 2:
             text = Env._PATH.read_bytes()
-            print(f"Try '{Path(sys.argv[0]).stem} env --help'") if not text else print(
-                base64.b64decode(text).decode()
-            )
+            print(base64.b64decode(text).decode() if text else ".env is empty")
             return
 
         Env.file_cipher(base64.b64decode)

@@ -1,4 +1,5 @@
 import sys
+from typing import List
 
 from selenium.webdriver import Chrome, ChromeOptions
 from selenium.webdriver.common.by import By
@@ -12,12 +13,12 @@ class UQDriver(Chrome):
     def __init__(
         self,
         env: Env,
-        extra_args: list[str] = None,
-        extra_exp: dict[str, str] = None,
+        extra_args: List[str] = None,
+        extra_exp: dict = None,
         do_login: bool = True,
         **kwargs
     ) -> None:
-        super(UQDriver, self).__init__(
+        super().__init__(
             options=self.default_options(env.headless, args=extra_args, exp=extra_exp),
             **kwargs
         )
@@ -34,6 +35,13 @@ class UQDriver(Chrome):
         return self
 
     def login(self, username: str, password: str) -> None:
+        if not (username or password):
+            print(
+                "Either provide the -u and -p flags.",
+                "Or see 'uqtools env --help' to set the environment variables",
+                file=sys.stderr,
+            )
+            sys.exit(1)
         self.get("https://auth.uq.edu.au/")
 
         self.find_element(By.ID, "username").send_keys(username)
@@ -49,12 +57,16 @@ class UQDriver(Chrome):
     @staticmethod
     def default_options(
         headless: bool = True,
-        args: list[str] = None,
-        exp: dict[str, str] = None,
+        args: List[str] = None,
+        exp: dict = None,
     ) -> ChromeOptions:
         opt = ChromeOptions()
         opt.add_argument("--headless") if headless else None
         opt.add_argument("--incognito")
+        opt.add_argument("--no-sandbox")
+        opt.add_argument("--no-default-browser-check")
+        opt.add_argument("--disable-gpu")
+        opt.add_argument("--disable-extensions")
         opt.add_experimental_option("excludeSwitches", ["enable-logging"])
 
         [opt.add_argument(arg) for arg in args] if args else None

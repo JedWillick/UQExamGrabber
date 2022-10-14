@@ -1,11 +1,61 @@
 import argparse
 import json
 from pathlib import Path
+from typing import Union
 
 from .env import Env
 from .examgrabber import exam_grabber
 from .grade import grade
 from .timetable import timetable
+
+
+def main() -> int:
+    parser = setup_argparse()
+    args = parser.parse_args()
+    if args.cmd is None:
+        parser.print_help()
+        return 1
+
+    if args.cmd == "env":
+        Env.config_env(args)
+        return 0
+
+    env = Env(args.username, args.password, args.timeout, args.headless)
+    if args.cmd in ["exam", "eg"]:
+        exam_grabber(
+            env,
+            args.courses,
+            baseOutDir=args.out,
+            force=args.force,
+            max_exams=args.max,
+        )
+    elif args.cmd in ["timetable", "tt"]:
+        timetable(
+            env,
+            out=args.out,
+            time_size=args.time_size,
+            semester=args.semester,
+            year=args.year,
+            inject=args.inject,
+            fetch=args.fetch,
+            orientation=args.orientation,
+            store=args.store,
+        )
+    elif args.cmd in ["grade", "gr"]:
+        return grade(
+            args.courses,
+            out=args.out,
+            sem=args.sem,
+            year=args.year,
+        )
+    return 0
+
+
+def read_json(path: Union[str, Path]):
+    try:
+        return json.loads(Path(path).read_text())
+    except Exception as e:
+        raise argparse.ArgumentTypeError(f"Invalid json file: {e}")
 
 
 def setup_timetable(sub: argparse._SubParsersAction) -> None:
@@ -48,7 +98,7 @@ def setup_timetable(sub: argparse._SubParsersAction) -> None:
     timetable.add_argument(
         "-i",
         "--inject",
-        type=lambda x: json.loads(Path(x).read_text()),
+        type=read_json,
         metavar="JSON",
         help="Inject data from a json file",
     )
@@ -58,6 +108,12 @@ def setup_timetable(sub: argparse._SubParsersAction) -> None:
         action="store_false",
         dest="fetch",
         help="Don't fetch data from UQ",
+    )
+    timetable.add_argument(
+        "-S",
+        "--store",
+        action="store_true",
+        help="Store the timetable data in a json file",
     )
 
 
@@ -78,11 +134,17 @@ def setup_exam(sub: argparse._SubParsersAction) -> None:
         help="Base out directory.",
     )
     exam.add_argument(
+        "-f",
+        "--force",
+        action="store_true",
+        help="Overwrite existing files",
+    )
+    exam.add_argument(
         "-n",
-        "--no-overwrite",
-        action="store_false",
-        dest="overwrite",
-        help="Don't overwrite existing files",
+        "--max",
+        type=int,
+        default=0,
+        help="Max number of exams to download (default: 0 for all)",
     )
 
 
@@ -171,38 +233,3 @@ def setup_argparse() -> argparse.ArgumentParser:
     setup_grade(sub)
 
     return root
-
-
-def main() -> int:
-    parser = setup_argparse()
-    args = parser.parse_args()
-    if args.cmd is None:
-        parser.print_help()
-        return 1
-
-    if args.cmd == "env":
-        Env.config_env(args)
-        return 0
-
-    env = Env(args.username, args.password, args.timeout, args.headless)
-    if args.cmd in ["exam", "eg"]:
-        exam_grabber(env, args.courses, args.out, args.overwrite)
-    elif args.cmd in ["timetable", "tt"]:
-        timetable(
-            env,
-            out=args.out,
-            time_size=args.time_size,
-            semester=args.semester,
-            year=args.year,
-            inject=args.inject,
-            fetch=args.fetch,
-            orientation=args.orientation,
-        )
-    elif args.cmd in ["grade", "gr"]:
-        grade(
-            args.courses,
-            out=args.out,
-            sem=args.sem,
-            year=args.year,
-        )
-    return 0
