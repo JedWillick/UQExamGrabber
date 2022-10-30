@@ -1,6 +1,6 @@
 # UQ Tools
 
-My collection of tools for scrapping [UQ](https://www.uq.edu.au/).
+My collection of tools for scraping [UQ](https://www.uq.edu.au/).
 
 ## Setup
 
@@ -38,14 +38,14 @@ uqtools eg math1051 -o ~/Documents/uq-exams
 
 ## UQ Timetable
 
-Scrap your allocated classes from [Allocate+](http://my.uq.edu.au/student-timetable) and output them in a prettier and cleaner PDF file.
+Scrape your allocated classes from [Allocate+](http://my.uq.edu.au/student-timetable) and output them in a prettier and cleaner PDF file.
 
 ```shell
 uqtools tt --help
 
 uqtools tt
 uqtools tt -o tt.pdf
-uqtools tt -r portrait --time-size 30 
+uqtools tt -r portrait --time-size 30
 ```
 
 ### Injecting data
